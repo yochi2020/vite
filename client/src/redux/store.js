@@ -12,6 +12,7 @@ const persistConfig = {
   storage,
   version:1
 }
+
 const persistedReducer = persistReducer(persistConfig,rootReducer);
 
 export const store = configureStore({
@@ -21,6 +22,10 @@ export const store = configureStore({
   //     serializableCheck: false,
   //   });
   // },
+  middleware: (getDefaultMiddleware) =>
+  getDefaultMiddleware({
+    serializableCheck: false,
+  }),
 });
 
 
