@@ -1,6 +1,11 @@
 import { useSelector, useDispatch } from "react-redux";
 import { useEffect, useRef, useState } from "react";
-import { getStorage, ref, uploadBytesResumable } from "firebase/storage";
+import {
+  getDownloadURL,
+  getStorage,
+  ref,
+  uploadBytesResumable,
+} from "firebase/storage";
 import { app } from "../firebase.js";
 import {
   deleteUserFailure,
@@ -16,10 +21,9 @@ const Profile = () => {
   const [file, setFile] = useState(undefined);
   const [filePerc, setFilePerc] = useState(0);
   const [fileUploadError, setFileUploadError] = useState(false);
+  const [formData, setFormData] = useState({});
   const dispatch = useDispatch();
 
-  console.log(filePerc);
-  console.log(file);
   useEffect(() => {
     if (file) {
       handleFileUpload(file);
@@ -31,13 +35,22 @@ const Profile = () => {
     const fileName = new Date().getTime() + file.name;
     const storageRef = ref(storage, fileName);
     const uploadTask = uploadBytesResumable(storageRef, file);
-    uploadTask.on("state_changed", (snapshot) => {
-      const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-      setFilePerc(Math.round(progress));
-    });
-    () => {
-      setFileUploadError(true);
-    };
+    uploadTask.on(
+      "state_changed",
+      (snapshot) => {
+        const progress =
+          (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        setFilePerc(Math.round(progress));
+      },
+      () => {
+        setFileUploadError(true);
+      },
+      () => {
+        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+          setFormData({ ...formData, avatar: downloadURL });
+        });
+      }
+    );
   };
   const handleChange = async () => {};
 
@@ -74,9 +87,9 @@ const Profile = () => {
       if (data.success === false) {
         dispatch(signOutUserFailure(data.message));
       }
-      dispatch(signOutUserSuccess(data))
-    }catch(error) {
-      dispatch(signOutUserFailure(error.message))
+      dispatch(signOutUserSuccess(data));
+    } catch (error) {
+      dispatch(signOutUserFailure(error.message));
     }
   };
   return (
@@ -93,9 +106,22 @@ const Profile = () => {
         <img
           onClick={() => fileRef.current.click()}
           className="rounded-full h-24 w-24 object-cover cursor-pointer self-center mt-2"
-          src={currentUser.avatar}
+          src={formData.avatar || currentUser.avatar}
           alt="profile"
         />
+        <p className="text-sm self-center">
+          {fileUploadError ? (
+            <span className="text-red-700">Error Image upload (image must be less than 2 mb)</span>
+          ) : filePerc > 0 && filePerc < 100 ? (
+            <span className="text-slate-700">Uploading {filePerc}</span>
+          ) : filePerc === 100 ? (
+            <span className="text-green-700">
+              Image successfully uploaded! {filePerc}
+            </span>
+          ) : (
+            ""
+          )}
+        </p>
         <input
           type="text"
           placeholder="username"
