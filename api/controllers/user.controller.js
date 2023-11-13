@@ -1,6 +1,7 @@
-import UserModel from "../models/user.model.js"
+import UserModel from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import { errorHandler } from "../utils/error.js";
+import User from "../models/user.model.js";
 
 export const test = (req, res) => {
   res.send("Hello World!");
@@ -29,7 +30,19 @@ export const updateUserController = async (req, res, next) => {
 
     const { password, ...rest } = updateUser._doc;
     res.status(200).json(rest);
+  } catch (error) {
+    next(error);
+  }
+};
 
+export const deleteUserController = async (req, res, next) => {
+  try {
+    if (req.user.id !== req.params.id) {
+      return next(errorHandler(401, "You can only delete you own account "));
+    }
+    await User.findByIdAndDelete(req.params.id);
+    res.clearCookies("access_token");
+    res.status(200).json("User has been deleted!")
   } catch (error) {
     next(error);
   }

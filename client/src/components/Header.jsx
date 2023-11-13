@@ -31,13 +31,17 @@ const Header = () => {
               About
             </li>
           </Link>
-          <Link to={"/sign-in"}>
+        
             {currentUser ? (
+                <Link to="/profile">
               <img className="rounded-full h-7 w-7 object-cover" src={currentUser.avatar} alt="profile" />
+              </Link>
             ) : (
-              <li className=" text-slate-700 hover:underline">Sign in</li>
+              <Link to="/sign-in">
+                <li className=" text-slate-700 hover:underline">Sign in</li>
+              </Link>
             )}
-          </Link>
+         
         </ul>
       </div>
     </header>

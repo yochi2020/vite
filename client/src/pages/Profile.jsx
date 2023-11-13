@@ -1,15 +1,22 @@
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { useEffect, useRef, useState } from "react";
 import { getStorage, ref, uploadBytesResumable } from "firebase/storage";
 import { app } from "../firebase.js";
+import {
+  deleteUserFailure,
+  deleteUserStart,
+  deleteUserSuccess,
+} from "../redux/user/userSlice.js";
 const Profile = () => {
   const { currentUser } = useSelector((state) => state.user);
   const fileRef = useRef(null);
   const [file, setFile] = useState(undefined);
   const [filePerc, setFilePerc] = useState(0);
   const [fileUploadError, setFileUploadError] = useState(false);
-console.log(filePerc)
-console.log(file);
+  const dispatch = useDispatch();
+
+  console.log(filePerc);
+  console.log(file);
   useEffect(() => {
     if (file) {
       handleFileUpload(file);
@@ -21,16 +28,35 @@ console.log(file);
     const fileName = new Date().getTime() + file.name;
     const storageRef = ref(storage, fileName);
     const uploadTask = uploadBytesResumable(storageRef, file);
-    uploadTask.on('state_changed',
-    (snapshot)=>{
-      const progress = (snapshot.bytesTransferred/snapshot.totalBytes)*100;
-      setFilePerc(Math.round(progress))
+    uploadTask.on("state_changed", (snapshot) => {
+      const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+      setFilePerc(Math.round(progress));
     });
-    ()=>{
+    () => {
       setFileUploadError(true);
+    };
+  };
+  const handleChange = async () => {};
+
+  const handleDelete = async () => {
+    try {
+      dispatch(deleteUserStart());
+
+      const res = await fetch(`/api/user/delete/${currentUser._id}`,{
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await res.json();
+      if (data.success === false) {
+        dispatch(deleteUserFailure(data.message));
+      }
+      dispatch(deleteUserSuccess(data));
+    } catch (error) {
+      dispatch(deleteUserFailure(error.message));
     }
   };
-  const handleChange = () => {};
   return (
     <div className="p-3 max-w-lg mx-auto ">
       <h1 className="text-3xl text-center font-semibold my-7 ">Profile</h1>
@@ -78,7 +104,9 @@ console.log(file);
       </form>
 
       <div className="flex justify-between mt-5">
-        <span className="text-red-700 cursor-pointer">Delete Account</span>
+        <span className="text-red-700 cursor-pointer" onClick={handleDelete}>
+          Delete Account
+        </span>
         <span className="text-red-700 cursor-pointer">Signup</span>
       </div>
     </div>
